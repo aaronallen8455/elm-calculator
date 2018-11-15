@@ -4409,13 +4409,11 @@ var author$project$Main$checkOverflow = function (model) {
 		author$project$Main$init,
 		{a: 'Error'}) : model;
 };
-var elm$core$Basics$False = 1;
 var elm$core$Basics$add = _Basics_add;
 var elm$core$Basics$apR = F2(
 	function (x, f) {
 		return f(x);
 	});
-var elm$core$Basics$append = _Utils_append;
 var elm$core$Basics$fdiv = _Basics_fdiv;
 var elm$core$Basics$mul = _Basics_mul;
 var elm$core$Basics$negate = function (n) {
@@ -4430,8 +4428,207 @@ var elm$core$Maybe$withDefault = F2(
 			return _default;
 		}
 	});
-var elm$core$String$contains = _String_contains;
 var elm$core$String$fromFloat = _String_fromNumber;
+var author$project$Main$equalsKeyPressed = F2(
+	function (displayNum, model) {
+		var _n0 = function ($) {
+			return $.i;
+		}(model);
+		if (!_n0.$) {
+			if (_n0.a.$ === 1) {
+				var sumOp = _n0.a.a;
+				var displayNum_ = (!sumOp) ? displayNum : (displayNum * (-1));
+				var newAccumulator = (function ($) {
+					return $.k;
+				}(model) + displayNum_) + A2(
+					elm$core$Maybe$withDefault,
+					0,
+					function ($) {
+						return $.j;
+					}(model));
+				return author$project$Main$checkOverflow(
+					_Utils_update(
+						author$project$Main$init,
+						{
+							a: elm$core$String$fromFloat(newAccumulator)
+						}));
+			} else {
+				var prodOp = _n0.a.a;
+				var displayNum_ = (!prodOp) ? displayNum : (1 / displayNum);
+				var product = A2(
+					elm$core$Maybe$withDefault,
+					0,
+					function ($) {
+						return $.j;
+					}(model)) * displayNum_;
+				var newAccumulator = function ($) {
+					return $.k;
+				}(model) + product;
+				return A3(
+					author$project$Main$checkDivision,
+					prodOp,
+					displayNum,
+					author$project$Main$checkOverflow(
+						_Utils_update(
+							author$project$Main$init,
+							{
+								a: elm$core$String$fromFloat(newAccumulator)
+							})));
+			}
+		} else {
+			return author$project$Main$init;
+		}
+	});
+var elm$core$Basics$False = 1;
+var elm$core$Basics$append = _Utils_append;
+var elm$core$String$contains = _String_contains;
+var author$project$Main$numKeyPressed = F2(
+	function (key, model) {
+		if (key === '.') {
+			return A2(
+				elm$core$String$contains,
+				'.',
+				function ($) {
+					return $.a;
+				}(model)) ? _Utils_update(
+				model,
+				{a: '0.', h: false, i: elm$core$Maybe$Nothing}) : _Utils_update(
+				model,
+				{
+					a: _Utils_ap(
+						function ($) {
+							return $.a;
+						}(model),
+						key),
+					h: false
+				});
+		} else {
+			var newDisplay = function ($) {
+				return $.h;
+			}(model) ? key : _Utils_ap(
+				function ($) {
+					return $.a;
+				}(model),
+				key);
+			return author$project$Main$checkOverflow(
+				_Utils_update(
+					model,
+					{a: newDisplay, h: false}));
+		}
+	});
+var author$project$Main$operatorKeyPressed = F3(
+	function (op, displayNum, model) {
+		if (op.$ === 1) {
+			var _n1 = function ($) {
+				return $.i;
+			}(model);
+			if (!_n1.$) {
+				if (_n1.a.$ === 1) {
+					var prevSumOp = _n1.a.a;
+					var displayNum_ = displayNum * ((!prevSumOp) ? 1 : (-1));
+					var newAccumulator = function ($) {
+						return $.k;
+					}(model) + displayNum_;
+					return author$project$Main$checkOverflow(
+						_Utils_update(
+							model,
+							{
+								k: newAccumulator,
+								a: elm$core$String$fromFloat(newAccumulator),
+								h: true,
+								i: elm$core$Maybe$Just(op),
+								j: elm$core$Maybe$Nothing
+							}));
+				} else {
+					var prevProdOp = _n1.a.a;
+					var displayNum_ = (!prevProdOp) ? displayNum : (1 / displayNum);
+					var product = A2(
+						elm$core$Maybe$withDefault,
+						0,
+						function ($) {
+							return $.j;
+						}(model)) * displayNum_;
+					var newAccumulator = function ($) {
+						return $.k;
+					}(model) + product;
+					return A3(
+						author$project$Main$checkDivision,
+						prevProdOp,
+						displayNum,
+						author$project$Main$checkOverflow(
+							_Utils_update(
+								model,
+								{
+									k: newAccumulator,
+									a: elm$core$String$fromFloat(newAccumulator),
+									h: true,
+									i: elm$core$Maybe$Just(op),
+									j: elm$core$Maybe$Nothing
+								})));
+				}
+			} else {
+				return _Utils_update(
+					model,
+					{
+						k: displayNum,
+						h: true,
+						i: elm$core$Maybe$Just(op)
+					});
+			}
+		} else {
+			var _n2 = function ($) {
+				return $.i;
+			}(model);
+			if (!_n2.$) {
+				if (_n2.a.$ === 1) {
+					var prevSumOp = _n2.a.a;
+					var newProdAccum = displayNum * ((!prevSumOp) ? 1 : (-1));
+					return _Utils_update(
+						model,
+						{
+							h: true,
+							i: elm$core$Maybe$Just(op),
+							j: elm$core$Maybe$Just(newProdAccum)
+						});
+				} else {
+					var prevProdOp = _n2.a.a;
+					var displayNum_ = (!prevProdOp) ? displayNum : (1 / displayNum);
+					var newProductAccum = A2(
+						elm$core$Maybe$withDefault,
+						1,
+						function ($) {
+							return $.j;
+						}(model)) * displayNum_;
+					var newDisplay = (!function ($) {
+						return $.k;
+					}(model)) ? elm$core$String$fromFloat(newProductAccum) : function ($) {
+						return $.a;
+					}(model);
+					return A3(
+						author$project$Main$checkDivision,
+						prevProdOp,
+						displayNum,
+						author$project$Main$checkOverflow(
+							_Utils_update(
+								model,
+								{
+									a: newDisplay,
+									h: true,
+									i: elm$core$Maybe$Just(op),
+									j: elm$core$Maybe$Just(newProductAccum)
+								})));
+				}
+			} else {
+				return _Utils_update(
+					model,
+					{
+						h: true,
+						i: elm$core$Maybe$Just(op),
+						j: elm$core$Maybe$Just(displayNum)
+					});
+			}
+		}
+	});
 var elm$core$String$toFloat = _String_toFloat;
 var author$project$Main$update = F2(
 	function (msg, model) {
@@ -4444,198 +4641,13 @@ var author$project$Main$update = F2(
 				}(model)));
 		switch (msg.$) {
 			case 0:
-				var c = msg.a;
-				if (c === '.') {
-					return A2(
-						elm$core$String$contains,
-						c,
-						function ($) {
-							return $.a;
-						}(model)) ? _Utils_update(
-						model,
-						{a: '0.', h: false, i: elm$core$Maybe$Nothing}) : _Utils_update(
-						model,
-						{
-							a: _Utils_ap(
-								function ($) {
-									return $.a;
-								}(model),
-								c),
-							h: false
-						});
-				} else {
-					var newDisplay = function ($) {
-						return $.h;
-					}(model) ? c : _Utils_ap(
-						function ($) {
-							return $.a;
-						}(model),
-						c);
-					return author$project$Main$checkOverflow(
-						_Utils_update(
-							model,
-							{a: newDisplay, h: false}));
-				}
+				var key = msg.a;
+				return A2(author$project$Main$numKeyPressed, key, model);
 			case 1:
 				var op = msg.a;
-				if (op.$ === 1) {
-					var _n3 = function ($) {
-						return $.i;
-					}(model);
-					if (!_n3.$) {
-						if (_n3.a.$ === 1) {
-							var prevSumOp = _n3.a.a;
-							var displayNum_ = displayNum * ((!prevSumOp) ? 1 : (-1));
-							var newAccumulator = function ($) {
-								return $.k;
-							}(model) + displayNum_;
-							return author$project$Main$checkOverflow(
-								_Utils_update(
-									model,
-									{
-										k: newAccumulator,
-										a: elm$core$String$fromFloat(newAccumulator),
-										h: true,
-										i: elm$core$Maybe$Just(op),
-										j: elm$core$Maybe$Nothing
-									}));
-						} else {
-							var prevProdOp = _n3.a.a;
-							var displayNum_ = (!prevProdOp) ? displayNum : (1 / displayNum);
-							var product = A2(
-								elm$core$Maybe$withDefault,
-								0,
-								function ($) {
-									return $.j;
-								}(model)) * displayNum_;
-							var newAccumulator = function ($) {
-								return $.k;
-							}(model) + product;
-							return A3(
-								author$project$Main$checkDivision,
-								prevProdOp,
-								displayNum,
-								author$project$Main$checkOverflow(
-									_Utils_update(
-										model,
-										{
-											k: newAccumulator,
-											a: elm$core$String$fromFloat(newAccumulator),
-											h: true,
-											i: elm$core$Maybe$Just(op),
-											j: elm$core$Maybe$Nothing
-										})));
-						}
-					} else {
-						return _Utils_update(
-							model,
-							{
-								k: displayNum,
-								h: true,
-								i: elm$core$Maybe$Just(op)
-							});
-					}
-				} else {
-					var _n4 = function ($) {
-						return $.i;
-					}(model);
-					if (!_n4.$) {
-						if (_n4.a.$ === 1) {
-							var prevSumOp = _n4.a.a;
-							var newProdAccum = displayNum * ((!prevSumOp) ? 1 : (-1));
-							return _Utils_update(
-								model,
-								{
-									h: true,
-									i: elm$core$Maybe$Just(op),
-									j: elm$core$Maybe$Just(newProdAccum)
-								});
-						} else {
-							var prevProdOp = _n4.a.a;
-							var displayNum_ = (!prevProdOp) ? displayNum : (1 / displayNum);
-							var newProductAccum = A2(
-								elm$core$Maybe$withDefault,
-								1,
-								function ($) {
-									return $.j;
-								}(model)) * displayNum_;
-							var newDisplay = (!function ($) {
-								return $.k;
-							}(model)) ? elm$core$String$fromFloat(newProductAccum) : function ($) {
-								return $.a;
-							}(model);
-							return A3(
-								author$project$Main$checkDivision,
-								prevProdOp,
-								displayNum,
-								author$project$Main$checkOverflow(
-									_Utils_update(
-										model,
-										{
-											a: newDisplay,
-											h: true,
-											i: elm$core$Maybe$Just(op),
-											j: elm$core$Maybe$Just(newProductAccum)
-										})));
-						}
-					} else {
-						return _Utils_update(
-							model,
-							{
-								h: true,
-								i: elm$core$Maybe$Just(op),
-								j: elm$core$Maybe$Just(displayNum)
-							});
-					}
-				}
+				return A3(author$project$Main$operatorKeyPressed, op, displayNum, model);
 			default:
-				var _n5 = function ($) {
-					return $.i;
-				}(model);
-				if (!_n5.$) {
-					if (_n5.a.$ === 1) {
-						var sumOp = _n5.a.a;
-						var displayNum_ = (!sumOp) ? displayNum : (displayNum * (-1));
-						var newAccumulator = (function ($) {
-							return $.k;
-						}(model) + displayNum_) + A2(
-							elm$core$Maybe$withDefault,
-							0,
-							function ($) {
-								return $.j;
-							}(model));
-						return author$project$Main$checkOverflow(
-							_Utils_update(
-								author$project$Main$init,
-								{
-									a: elm$core$String$fromFloat(newAccumulator)
-								}));
-					} else {
-						var prodOp = _n5.a.a;
-						var displayNum_ = (!prodOp) ? displayNum : (1 / displayNum);
-						var product = A2(
-							elm$core$Maybe$withDefault,
-							0,
-							function ($) {
-								return $.j;
-							}(model)) * displayNum_;
-						var newAccumulator = function ($) {
-							return $.k;
-						}(model) + product;
-						return A3(
-							author$project$Main$checkDivision,
-							prodOp,
-							displayNum,
-							author$project$Main$checkOverflow(
-								_Utils_update(
-									author$project$Main$init,
-									{
-										a: elm$core$String$fromFloat(newAccumulator)
-									})));
-					}
-				} else {
-					return author$project$Main$init;
-				}
+				return A2(author$project$Main$equalsKeyPressed, displayNum, model);
 		}
 	});
 var author$project$Main$Divide = 1;

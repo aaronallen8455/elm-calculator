@@ -8,12 +8,14 @@ main = Browser.sandbox { init = init, update = update, view = view }
 -- MODEL
 
 type alias Model =
-  { display : String
-  , productAccum : Maybe Float
-  , accumulator : Float
-  , prevOperator : Maybe Op
-  , lastKeyWasOperator : Bool }
+  { display : String            -- What gets displayed by the UI
+  , productAccum : Maybe Float  -- If a product operation (*,/) is in progress, it is accumulated here
+  , accumulator : Float         -- Accumulates the overall result
+  , prevOperator : Maybe Op     -- Holds the previous operation, if one exists
+  , lastKeyWasOperator : Bool   -- True if the last key pressed was an operator key
+  }
 
+-- | The initial state
 init : Model
 init =
   { display = "0"
@@ -31,103 +33,118 @@ type ProductOp = Multiply | Divide
 
 type Msg = Num String | Operator Op | Equals
 
+-- | Updates the Model given a message from the UI
 update : Msg -> Model -> Model
 update msg model = 
   -- read the number out of the display
   let displayNum = Maybe.withDefault 0 ( String.toFloat ( .display model ) ) 
   in case msg of
     -- A numeric key was pressed
-    Num c -> case c of
-      -- add a decimal point or reset if there already was one
-      "." -> if String.contains c ( .display model )
-             then { model | display = "0.", prevOperator = Nothing, lastKeyWasOperator = False }
-             else { model | display = ( .display model ) ++ c, lastKeyWasOperator = False }
-      -- append the number to the end of the display string if the last key was not an operator, otherwise start new string
-      _ -> let newDisplay = if .lastKeyWasOperator model then c else .display model ++ c
-           in { model | display = newDisplay, lastKeyWasOperator = False }
-              |> checkOverflow
-
+    Num key -> numKeyPressed key model
     -- An operator key was pressed
-    Operator op -> case op of
-      -- current operation is a sum
-      Sum _ -> case .prevOperator model of
-        -- prev operation was a sum
-        Just ( Sum prevSumOp ) ->
-          -- negate the display number if prev operation was subtraction
-          let displayNum_ = displayNum * ( if prevSumOp == Add then 1 else -1 )
-              newAccumulator = ( .accumulator model ) + displayNum_
-          in { model | display = String.fromFloat newAccumulator
-                     , accumulator = newAccumulator
-                     , productAccum = Nothing
-                     , prevOperator = Just op
-                     , lastKeyWasOperator = True }
-             |> checkOverflow 
-        -- prev operation was a product
-        Just ( Product prevProdOp ) ->
-          -- invert the display number if the prev operation was division
-          let displayNum_ = if prevProdOp == Multiply then displayNum else 1 / displayNum
-              product = Maybe.withDefault 0 ( .productAccum model ) * displayNum_
-              newAccumulator = .accumulator model + product
-          in  { model | display = String.fromFloat newAccumulator
-                      , accumulator = newAccumulator
-                      , productAccum = Nothing
-                      , prevOperator = Just op
-                      , lastKeyWasOperator = True }
-              |> checkOverflow
-              |> checkDivision prevProdOp displayNum
-
-        -- no previous operation
-        Nothing -> { model | prevOperator = Just op
-                           , lastKeyWasOperator = True
-                           , accumulator = displayNum }
-
-      -- current operation is a product
-      Product _ -> case .prevOperator model of
-        -- prev operation was a sum
-        Just ( Sum prevSumOp ) ->
-          let newProdAccum = displayNum * ( if prevSumOp == Add then 1 else -1 )
-          in { model | productAccum = Just newProdAccum
-                     , prevOperator = Just op
-                     , lastKeyWasOperator = True }
-        -- prev operation was a product
-        Just ( Product prevProdOp) ->
-          let displayNum_ = if prevProdOp == Multiply then displayNum else 1 / displayNum
-              newProductAccum = ( Maybe.withDefault 1 ( .productAccum model ) ) * displayNum_
-              newDisplay = if .accumulator model == 0 then String.fromFloat newProductAccum else .display model
-          in { model | display = newDisplay
-                     , productAccum = Just newProductAccum
-                     , prevOperator = Just op
-                     , lastKeyWasOperator = True }
-             |> checkOverflow
-             |> checkDivision prevProdOp displayNum
-
-        -- no previous operation
-        Nothing -> { model | prevOperator = Just op
-                           , lastKeyWasOperator = True 
-                           , productAccum = Just displayNum }
-
+    Operator op -> operatorKeyPressed op displayNum model
     -- equals key was pressed
-    Equals -> case .prevOperator model of
-      -- final operation is a sum
-      Just ( Sum sumOp ) ->
-        let displayNum_ = if sumOp == Add then displayNum else displayNum * -1
-            newAccumulator = .accumulator model 
-                               + displayNum_
-                               + Maybe.withDefault 0 ( .productAccum model )
-        in { init | display = String.fromFloat newAccumulator }
+    Equals -> equalsKeyPressed displayNum model
+
+-- | When a number key (or the decimal) is pressed, update the display value
+numKeyPressed : String -> Model -> Model
+numKeyPressed key model = case key of
+  -- add a decimal point or reset if there already was one
+  "." -> if String.contains "." ( .display model )
+          then { model | display = "0.", prevOperator = Nothing, lastKeyWasOperator = False }
+          else { model | display = ( .display model ) ++ key, lastKeyWasOperator = False }
+  -- append the number to the end of the display string if the last key was not an operator, otherwise start new string
+  _ -> let newDisplay = if .lastKeyWasOperator model then key else .display model ++ key
+        in { model | display = newDisplay, lastKeyWasOperator = False }
            |> checkOverflow
 
-      -- final operation is a product
-      Just ( Product prodOp ) ->
-        let displayNum_ = if prodOp == Multiply then displayNum else 1 / displayNum
+-- | When an operator key is pressed, update the internal state
+-- and display an intermediate result if determinable based upon
+-- the operator pressed and the previous operator, if one exists.
+operatorKeyPressed : Op -> Float -> Model -> Model
+operatorKeyPressed op displayNum model =
+  case op of
+    -- current operation is a sum
+    Sum _ -> case .prevOperator model of
+      -- prev operation was a sum
+      Just ( Sum prevSumOp ) ->
+        -- negate the display number if prev operation was subtraction
+        let displayNum_ = displayNum * ( if prevSumOp == Add then 1 else -1 )
+            newAccumulator = ( .accumulator model ) + displayNum_
+        in { model | display = String.fromFloat newAccumulator
+                   , accumulator = newAccumulator
+                   , productAccum = Nothing
+                   , prevOperator = Just op
+                   , lastKeyWasOperator = True }
+           |> checkOverflow 
+      -- prev operation was a product
+      Just ( Product prevProdOp ) ->
+        -- invert the display number if the prev operation was division
+        let displayNum_ = if prevProdOp == Multiply then displayNum else 1 / displayNum
             product = Maybe.withDefault 0 ( .productAccum model ) * displayNum_
             newAccumulator = .accumulator model + product
-        in { init | display = String.fromFloat newAccumulator }
-           |> checkOverflow
-           |> checkDivision prodOp displayNum
+        in  { model | display = String.fromFloat newAccumulator
+                    , accumulator = newAccumulator
+                    , productAccum = Nothing
+                    , prevOperator = Just op
+                    , lastKeyWasOperator = True }
+            |> checkOverflow
+            |> checkDivision prevProdOp displayNum
 
-      -- reset if no operation
-      Nothing -> init
+      -- no previous operation
+      Nothing -> { model | prevOperator = Just op
+                         , lastKeyWasOperator = True
+                         , accumulator = displayNum }
+
+    -- current operation is a product
+    Product _ -> case .prevOperator model of
+      -- prev operation was a sum
+      Just ( Sum prevSumOp ) ->
+        let newProdAccum = displayNum * ( if prevSumOp == Add then 1 else -1 )
+        in { model | productAccum = Just newProdAccum
+                   , prevOperator = Just op
+                   , lastKeyWasOperator = True }
+      -- prev operation was a product
+      Just ( Product prevProdOp) ->
+        let displayNum_ = if prevProdOp == Multiply then displayNum else 1 / displayNum
+            newProductAccum = ( Maybe.withDefault 1 ( .productAccum model ) ) * displayNum_
+            newDisplay = if .accumulator model == 0 then String.fromFloat newProductAccum else .display model
+        in { model | display = newDisplay
+                   , productAccum = Just newProductAccum
+                   , prevOperator = Just op
+                   , lastKeyWasOperator = True }
+           |> checkOverflow
+           |> checkDivision prevProdOp displayNum
+
+      -- no previous operation
+      Nothing -> { model | prevOperator = Just op
+                         , lastKeyWasOperator = True 
+                         , productAccum = Just displayNum }
+
+-- | When the equals key is pressed, display the final result and reset the internal state.
+equalsKeyPressed : Float -> Model -> Model
+equalsKeyPressed displayNum model =
+  case .prevOperator model of
+    -- final operation is a sum
+    Just ( Sum sumOp ) ->
+      let displayNum_ = if sumOp == Add then displayNum else displayNum * -1
+          newAccumulator = .accumulator model 
+                              + displayNum_
+                              + Maybe.withDefault 0 ( .productAccum model )
+      in { init | display = String.fromFloat newAccumulator }
+         |> checkOverflow
+
+    -- final operation is a product
+    Just ( Product prodOp ) ->
+      let displayNum_ = if prodOp == Multiply then displayNum else 1 / displayNum
+          product = Maybe.withDefault 0 ( .productAccum model ) * displayNum_
+          newAccumulator = .accumulator model + product
+      in { init | display = String.fromFloat newAccumulator }
+         |> checkOverflow
+         |> checkDivision prodOp displayNum
+
+    -- reset if no operation
+    Nothing -> init
 
 -- | Check if the display string is longer than 10 digits
 -- if so, display Error and reset.
